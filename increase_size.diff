@@ -1,0 +1,38 @@
+diff --git a/SPECS/dparted/dparted.spec b/SPECS/dparted/dparted.spec
+index 11605af..a56108b 100644
+--- a/SPECS/dparted/dparted.spec
++++ b/SPECS/dparted/dparted.spec
+@@ -8,6 +8,7 @@ Group:		Applications/System
+ Vendor:		VMware, Inc.
+ Distribution:	Photon
+ Source0:	%{name}-%{version}.tar.gz
++Patch0: increase-boot-partition-size.patch
+ Requires:	python2 >= 2.7
+ BuildRequires:	parted
+ BuildRequires:	glibmm
+@@ -21,6 +22,7 @@ Requires:	glibmm
+ My lib
+ %prep
+ %setup -q
++%patch0 -p1
+ %build
+ ./configure \
+ 	--prefix=%{_prefix} \
+diff --git a/SPECS/dparted/increase-boot-partition-size.patch b/SPECS/dparted/increase-boot-partition-size.patch
+new file mode 100644
+index 0000000..75372a3
+--- /dev/null
++++ b/SPECS/dparted/increase-boot-partition-size.patch
+@@ -0,0 +1,12 @@
++diff -ruN dparted-0.1/src/main.cc dparted-0.1-patch/src/main.cc
++--- dparted-0.1/src/main.cc	2015-03-10 14:04:37.000000000 -0700
+++++ dparted-0.1-patch/src/main.cc	2015-06-30 18:33:20.193783880 -0700
++@@ -185,7 +185,7 @@
++ 		success &= add_newPartitionToTheEnd(gparted_core, 
++ 			devices[0], 
++ 			GParted::FS_CLEARED, 
++-			3 * 1024 * 1024 / devices[0].sector_size /*number of sectors*/,
+++			100 * 1024 * 1024 / devices[0].sector_size /*number of sectors*/,
++ 			0 /*remaining sectors*/);
++ 		if (!success) continue;
++ 		// Refresh the devices after adding the new partition
