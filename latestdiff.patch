@@ -1,0 +1,169 @@
+diff --git a/SPECS/dosfstools/dosfstools.spec b/SPECS/dosfstools/dosfstools.spec
+new file mode 100644
+index 0000000..2e48392
+--- /dev/null
++++ b/SPECS/dosfstools/dosfstools.spec
+@@ -0,0 +1,32 @@
++Summary:	Dos Filesystemtools
++Name:		dosfstools
++Version:	3.0.26
++Release:	1%{?dist}
++License:	GPLv3+
++URL:		http://daniel-baumann.ch/software/dosfstools/
++Group:		Filesystem Tools
++Vendor:		VMware, Inc.
++Distribution: Photon
++Source0:	http://daniel-baumann.ch/files/software/dosfstools/%{name}-%{version}.tar.gz
++%description
++dosfstools contains utilities for making and checking MS-DOS FAT filesystems.
++%prep
++%setup -q
++%build
++make %{?_smp_mflags}
++%install
++[ %{buildroot} != "/"] && rm -rf %{buildroot}/*
++make DESTDIR=%{buildroot} PREFIX="/usr" install
++%clean
++rm -rf %{buildroot}/*
++%files 
++%defattr(-,root,root)
++%{_sbindir}/*
++%{_libdir}/*
++%{_mandir}/man8/*
++%{_docdir}/dosfstools/*
++%exclude %{_mandir}/de/*
++%exclude %{_libdir}/debug/*
++%changelog
++*	Wed Jul 1 2014 Sharath George <sharathg@vmware.com> 3.0.26-1
++-	Initial build.	First version
+diff --git a/SPECS/dparted/dparted.spec b/SPECS/dparted/dparted.spec
+index 11605af..33a5fc4 100644
+--- a/SPECS/dparted/dparted.spec
++++ b/SPECS/dparted/dparted.spec
+@@ -1,13 +1,14 @@
+ Summary:	My summary.
+ Name:		dparted
+ Version:	0.1
+-Release:	1%{?dist}
++Release:	3%{?dist}
+ License:	GPLv2+
+ URL:		dparted-0.1.tar.gz
+ Group:		Applications/System
+ Vendor:		VMware, Inc.
+ Distribution:	Photon
+ Source0:	%{name}-%{version}.tar.gz
++Patch0: increase-boot-partition-size.patch
+ Requires:	python2 >= 2.7
+ BuildRequires:	parted
+ BuildRequires:	glibmm
+@@ -21,6 +22,7 @@ Requires:	glibmm
+ My lib
+ %prep
+ %setup -q
++%patch0 -p1
+ %build
+ ./configure \
+ 	--prefix=%{_prefix} \
+@@ -38,5 +40,7 @@ make DESTDIR=%{buildroot} install
+ %{_sbindir}/*
+ %{_datadir}/*
+ %changelog
++*	Wed Jul 1 2014 Sharath George <sharathg@vmware.com> 0.18.0-2
++	Increased boot partition size to 300M
+ *	Thu Nov 12 2014 Mahmoud Bassiouny <mbassiouny@vmware.com> 0.18.0-1
+ 	Initial version
+diff --git a/SPECS/dparted/increase-boot-partition-size.patch b/SPECS/dparted/increase-boot-partition-size.patch
+new file mode 100644
+index 0000000..c080b26
+--- /dev/null
++++ b/SPECS/dparted/increase-boot-partition-size.patch
+@@ -0,0 +1,12 @@
++diff -ruN dparted-0.1/src/main.cc dparted-0.1-patch/src/main.cc
++--- dparted-0.1/src/main.cc	2015-03-10 14:04:37.000000000 -0700
+++++ dparted-0.1-patch/src/main.cc	2015-06-30 18:33:20.193783880 -0700
++@@ -185,7 +185,7 @@
++ 		success &= add_newPartitionToTheEnd(gparted_core, 
++ 			devices[0], 
++ 			GParted::FS_CLEARED, 
++-			3 * 1024 * 1024 / devices[0].sector_size /*number of sectors*/,
+++			300 * 1024 * 1024 / devices[0].sector_size /*number of sectors*/,
++ 			0 /*remaining sectors*/);
++ 		if (!success) continue;
++ 		// Refresh the devices after adding the new partition
+diff --git a/SPECS/grub/grub.spec b/SPECS/grub/grub.spec
+index 92c4f05..988f8f6 100644
+--- a/SPECS/grub/grub.spec
++++ b/SPECS/grub/grub.spec
+@@ -35,7 +35,12 @@ These are the additional language files of grub.
+ 	--sysconfdir=%{_sysconfdir} \
+ 	--disable-grub-emu-usb \
+ 	--disable-efiemu \
+-	--disable-werror
++	--disable-werror \
++    --with-platform=efi \
++    --target=x86_64 \
++    --program-prefix="" \
++    --with-bootdir="/boot" \
++    --with-grubdir="grub" 
+ make %{?_smp_mflags}
+ %install
+ make DESTDIR=%{buildroot} install
+diff --git a/SPECS/pciutils/pciutils.spec b/SPECS/pciutils/pciutils.spec
+new file mode 100644
+index 0000000..de8d159
+--- /dev/null
++++ b/SPECS/pciutils/pciutils.spec
+@@ -0,0 +1,40 @@
++Summary:	System utilities to list pci devices
++Name:		pciutils
++Version:	3.3.1
++Release:	1%{?dist}
++License:	GPLv2
++URL:		https://www.kernel.org/pub/software/utils/pciutils/
++Group:		System Environment/System Utilities
++Vendor:		VMware, Inc.
++Distribution: Photon
++Source0:	https://www.kernel.org/pub/software/utils/pciutils/%{name}-%{version}.tar.gz
++%description
++The pciutils package contains a set of programs for listing PCI devices, inspecting their status and setting their configuration registers.
++%prep
++%setup -q
++%build
++make %{?_smp_mflags} PREFIX=%{_prefix} \
++    SHAREDIR=%{_datadir}/misc \
++    SHARED=yes
++
++%install
++[ %{buildroot} != "/"] && rm -rf %{buildroot}/*
++make DESTDIR=%{buildroot} \
++    PREFIX=%{_prefix} \
++    SHAREDIR=%{_datadir}/misc \
++    SHARED=yes \
++    install install-lib
++chmod -v 766 %{buildroot}%{_libdir}/libpci.so
++
++%clean
++rm -rf %{buildroot}/*
++%files 
++%defattr(-,root,root)
++%{_sbindir}/*
++%{_libdir}/*
++%{_includedir}/*
++%{_datadir}/misc/*
++%{_mandir}/*
++%changelog
++*	Thu Jul 2 2015 Sharath George <sharathg@vmware.com> 3.3.1-1
++-	Initial build.	First version
+diff --git a/common/data/packages_iso.json b/common/data/packages_iso.json
+index 5c5fbef..56c56d2 100644
+--- a/common/data/packages_iso.json
++++ b/common/data/packages_iso.json
+@@ -13,7 +13,7 @@
+                 "elfutils-libelf", "sqlite-autoconf", "nspr", "nss", "popt", "lua", "rpm",
+                 "gptfdisk", "tar", "gzip", "openssl", "python2", "python2-libs", "python-requests",
+                 "pcre", "glib", "parted", "libsigc++", "XML-Parser", "glibmm", "dparted",
+-                "libgsystem", "ostree","device-mapper","device-mapper-libs","libsepol","libselinux"]
++                "libgsystem", "ostree","device-mapper","device-mapper-libs","libsepol","libselinux", "dosfstools","pciutils"]
+ }
+ 
+ 
